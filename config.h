@@ -4,13 +4,20 @@
  * appearance
  *
  * font: see http://freedesktop.org/software/fontconfig/fontconfig-user.html
+ *
+ * Installed Patches
+ * alpha-20220206-0.8.5
+ * anysize-20220718-baa9357
+ * bold-is-not-bright-20190127-3be4cf1
+ * changealpha- 20230519-b44f2ad
+ * delkey-20201112-4ef0cbd
+ * font2-0.8.5
+ * scrollback-0.9.2
+ *
  */
-static char *font = "DejaVuSansMono:pixelsize=12:antialias=true:autohint=true";
+static char *font = "HackNerdFontPropo:pixelsize=12:antialias=true:autohint=true";
 /* Spare fonts */
-static char *font2[] = {
-/*	"Inconsolata for Powerline:pixelsize=12:antialias=true:autohint=true", */
-	"Font Awesome 6 Free:pixelsize=12:antialias=true:autohint-true",
-};
+static char *font2[] = {"NotoColorEmoji:pixelsize=11:antialias=true:autohint=true" };
 
 static int borderpx = 0;
 
@@ -77,7 +84,7 @@ static unsigned int cursorthickness = 2;
  * bell volume. It must be a value between -100 and 100. Use 0 for disabling
  * it
  */
-static int bellvolume = 0;
+static int bellvolume = 10;
 
 /* default TERM value */
 char *termname = "st-256color";
@@ -100,28 +107,31 @@ char *termname = "st-256color";
 unsigned int tabspaces = 4;
 
 /* bg opacity */
-float alpha = 0.8;
+float alpha = 0.4;
+
+/* Background opacity */
+float alpha_def;
 
 /* Terminal colors (16 first used in escape sequence) */
 static const char *colorname[] = {
 	/* 8 normal colors */
-	"#3b4252", /* black   */
+	"#000000", /* black   */
 	"#bf616a", /* red     */
 	"#a3be8c", /* green   */
 	"#ebcb8b", /* yellow  */
 	"#81a1c1", /* blue    */
 	"#b48ead", /* magenta */
 	"#88c0d0", /* cyan    */
-	"#e5e9f0", /* white   */
+	"#999999", /* white   */
 
 	/* 8 bright colors */
 	"#4c566a", /* black   */
-	"#bf616a", /* red     */
-	"#a3be8c", /* green   */
-	"#ebcb8b", /* yellow  */
-	"#81a1c1", /* blue    */
-	"#b48ead", /* magenta */
-	"#8fbcbb", /* cyan    */
+	"#fe0f26", /* red     */
+	"#008000", /* green   */
+	"#f5f500", /* yellow  */
+	"#0505ff", /* blue    */
+	"#ff0aff", /* magenta */
+	"#14ffff", /* cyan    */
 	"#eceff4", /* white   */
 
 	[255] = 0,
@@ -189,8 +199,8 @@ static uint forcemousemod = ShiftMask;
 const  unsigned int mousescrollincrement = 5;
 static MouseShortcut mshortcuts[] = {
 	/* mask                 button   function        argument       release */
-	{ XK_ANY_MOD,           Button4, kscrollup,      {.i = mousescrollincrement},      0, /* !alt */ +1 },
-	{ XK_ANY_MOD,           Button5, kscrolldown,    {.i = mousescrollincrement},      0, /* !alt */ -1 },
+	{ XK_ANY_MOD,           Button4, kscrollup,      {.i = mousescrollincrement},      0, /* !alt */ 1 },
+	{ XK_ANY_MOD,           Button5, kscrolldown,    {.i = mousescrollincrement},      0, /* !alt */ 1 },
     { XK_ANY_MOD,           Button2, clippaste,      {.i = 0},      1 },
 	{ ShiftMask,            Button4, ttysend,        {.s = "\033[5;2~"} },
 	{ XK_ANY_MOD,           Button4, ttysend,        {.s = "\031"} },
@@ -202,20 +212,24 @@ static Shortcut shortcuts[] = {
 	/* mask                 keysym          function        argument */
 	{ XK_ANY_MOD,           XK_Break,       sendbreak,      {.i =  0} },
 	{ ControlMask,          XK_Print,       toggleprinter,  {.i =  0} },
-	{ ShiftMask,            XK_Print,       printscreen,    {.i =  0} },
-	{ XK_ANY_MOD,           XK_Print,       printsel,       {.i =  0} },
+//	{ ShiftMask,            XK_Print,       printscreen,    {.i =  0} },
+//	{ XK_ANY_MOD,           XK_Print,       printsel,       {.i =  0} },
 	{ TERMMOD,              XK_J,           zoom,           {.f = +1} },
 	{ TERMMOD,              XK_K,           zoom,           {.f = -1} },
 	{ TERMMOD,              XK_U,           zoom,           {.f = +2} },
     { TERMMOD,              XK_D,           zoom,           {.f = -2} },
 	{ TERMMOD,              XK_R,           zoomreset,      {.f =  0} },
 	{ TERMMOD,              XK_C,           clipcopy,       {.i =  0} },
+	{ MODKEY,               XK_c,           clipcopy,       {.i =  0} },
 	{ TERMMOD,              XK_V,           clippaste,      {.i =  0} },
-	{ MODKEY,               XK_c,           selpaste,       {.i =  0} },
-	{ MODKEY,               XK_v,           selpaste,       {.i =  0} },
+	{ MODKEY,               XK_v,           clippaste,      {.i =  0} },
+    { ShiftMask,            XK_Insert,      selpaste,       {.i =  0} },
+ 	{ MODKEY,               XK_a,           chgalpha,       {.f = -1} }, /* Decrease opacity */
+    { MODKEY,               XK_s,           chgalpha,       {.f = +1} }, /* Increase opacity */
+	{ MODKEY,               XK_r,           chgalpha,       {.f =  0} }, /* Reset opacity */
 	{ TERMMOD,              XK_Num_Lock,    numlock,        {.i =  0} },
-	{ ShiftMask,            XK_Page_Up,     kscrollup,      {.i = -1} },
-    { ShiftMask,            XK_Page_Down,   kscrolldown,    {.i = -1} },
+	{ MODKEY,               XK_Up,          kscrollup,      {.i = -1} },
+    { MODKEY,               XK_Down,        kscrolldown,    {.i = -1} },
     { MODKEY,               XK_j,           kscrollup,      {.i = -1} },
     { MODKEY,               XK_k,           kscrolldown,    {.i = -1} },
     { MODKEY,               XK_u,           kscrollup,      {.i = -2} },
